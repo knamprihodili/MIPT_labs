@@ -6,6 +6,9 @@
 *.synctex.gz
 *.out
 *Notes.bib
+*.bbl
+*.blg
+
 
 # Исключаем мусор от Python
 __pycache__/
