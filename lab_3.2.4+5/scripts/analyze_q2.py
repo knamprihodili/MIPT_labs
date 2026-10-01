@@ -224,6 +224,52 @@ def q_pfc(g0, gp, gm):
     return np.nan, True
 
 
+# ---------------- п. 2.6: цуги (нарастание / затухание) ----------------
+# Ручные курсорные измерения (лист «3. Установление и затухание» в 325.xlsx).
+# Нарастание: (k, U_k, k+n, U_{k+n});  затухание: (m, U_m, m+n, U_{m+n}).
+SIGMA_U_BURST = 0.05          # В, погрешность курсорного измерения
+BURST = {
+    "R1": {"U0": 8.24,
+           "rise":  [(2, 2.84, 3, 4.48), (4, 5.68, 6, 7.12)],
+           "decay": [(1, 5.52, 2, 3.80), (3, 2.56, 4, 1.72)]},
+    "R2": {"U0": 2.09,
+           "rise":  [(1, 0.73, 2, 1.80), (1, 0.73, 3, 2.04)],
+           "decay": [(1, 1.82, 2, 0.32), (1, 1.82, 3, 0.052)]},
+}
+
+
+def burst_theta(U0, pairs, mode, sU=SIGMA_U_BURST):
+    """Θ по парам амплитуд и их взвешенное среднее.
+    rise : Θ = (1/n) ln[(U0-U_k)/(U0-U_{k+n})]  (U0 тоже с погрешностью sU)
+    decay: Θ = (1/n) ln(U_m/U_{m+n})"""
+    th, sth = [], []
+    for k, u1, k2, u2 in pairs:
+        n = k2 - k
+        if mode == "rise":
+            a, b = U0 - u1, U0 - u2
+            th.append(np.log(a / b) / n)
+            sth.append(sU / n * np.sqrt(1 / a**2 + 1 / b**2 + (1 / b - 1 / a) ** 2))
+        else:
+            th.append(np.log(u1 / u2) / n)
+            sth.append(sU / n * np.sqrt(1 / u1**2 + 1 / u2**2))
+    th, sth = np.array(th), np.array(sth)
+    w = 1 / sth**2
+    m = np.sum(w * th) / np.sum(w)
+    return th, sth, m, 1 / np.sqrt(np.sum(w))
+
+
+def burst_Q(name):
+    """(Q_нар, σ, Q_зат, σ) для R1/R2; NaN, если данных нет."""
+    if name not in BURST:
+        return (np.nan,) * 4
+    d = BURST[name]
+    out = []
+    for mode in ("rise", "decay"):
+        _, _, m, s = burst_theta(d["U0"], d[mode], mode)
+        out += [np.pi / m, np.pi * s / m**2]
+    return tuple(out)
+
+
 def geo_Q_pfc(f0, fp):
     """Идеальный контур 2-го порядка: ν-·ν+ = ν0² -> Δν = ν+ - ν0²/ν+ (для случая, когда нижняя ветвь не измерена)."""
     return f0 / (fp - f0 ** 2 / fp)
@@ -453,14 +499,20 @@ def main():
     for r in rows:
         table.append([f"{r['name']} = {r['R']:.0f} Ом",
                       cell(r["Q_theory"], r["sQ_theory"]), cell(r["Q_th"], r["sQ_th"]), cell(r["Q_sp"], r["sQ_sp"]),
-                      cell(r["Qa"], r["sQa"]), cell(r["Qp"], r["sQp"]) + (" †" if r["Qp_est"] else ""), "—", "—"])
+                      cell(r["Qa"], r["sQa"]), cell(r["Qp"], r["sQp"]) + (" †" if r["Qp_est"] else ""),
+                      cell(*burst_Q(r["name"])[:2]), cell(*burst_Q(r["name"])[2:])])
     print("\n=== Сводная таблица добротности Q (п. 2.7.13), погрешности 1σ ===")
     w = [max(len(hdr[j]), max(len(t[j]) for t in table)) + 2 for j in range(len(hdr))]
     print("".join(h.center(w[j]) for j, h in enumerate(hdr)))
     print("-" * sum(w))
     for t in table:
         print("".join(c.center(w[j]) for j, c in enumerate(t)))
-    print("\nПримечания: «—» - нет данных п. 2.6 (цуги: нарастание/затухание колебаний).")
+    print("\nЦуги (п. 2.6), σ_U = %.2f В:" % SIGMA_U_BURST)
+    for nm, d in BURST.items():
+        for mode, lab in (("rise", "нарастание"), ("decay", "затухание")):
+            th, sth, m, s = burst_theta(d["U0"], d[mode], mode)
+            print(f"  {nm} {lab:11s}: Θ = " + ", ".join(f"{t:.3f}±{e:.3f}" for t, e in zip(th, sth))
+                  + f"  -> <Θ> = {m:.3f} ± {s:.3f},  Q = {np.pi/m:.2f} ± {np.pi*s/m**2:.2f}")
     print("† - оценка: у R2 фаза не достигает уровня -3π/4 (минимум около -1.95 рад), поэтому Δν найдено по уровню -π/4 "
           f"и соотношению ν-·ν+ = ν0² (на R1 такая оценка отличается от полного метода на {100*calib:.0f} %, эта величина заложена в погрешность).")
     print(f"f(L,C,R): Q = √(L/(C+C0))/(R+R_L), L = {L_LCR*1e3:.2f} мГн (LCR-метр), C+C0 = "
@@ -483,7 +535,7 @@ def main():
     tb = a2.table(cellText=table, colLabels=hdr, loc="center", cellLoc="center")
     tb.auto_set_font_size(False); tb.set_fontsize(12); tb.scale(1, 2.0)
     a2.set_title("Добротность контура Q, определённая разными способами (±1σ)", pad=14)
-    fig2.text(0.5, 0.03, "«—» — нет данных п. 2.6 (нарастание/затухание в цугах);  † — оценка: у R2 фаза не достигает уровня −3π/4", ha="center", fontsize=10)
+    fig2.text(0.5, 0.03, "Нарастание/затухание: Q = π/⟨Θ⟩ по цугам (п. 2.6);  † — оценка: у R2 фаза не достигает уровня −3π/4", ha="center", fontsize=10)
     fig2.savefig(args.out + "_table.pdf", bbox_inches="tight")
     print(f"\nСохранено: {args.out}_curves.pdf, {args.out}_table.(pdf|csv)")
     if not args.no_show:
