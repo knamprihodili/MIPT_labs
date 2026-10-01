@@ -1,0 +1,13 @@
+# Исключаем мусор от LaTeX
+*.aux
+*.log
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.out
+*Notes.bib
+
+# Исключаем мусор от Python
+__pycache__/
+.venv/
+.ipynb_checkpoints/

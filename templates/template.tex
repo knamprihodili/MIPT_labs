@@ -1,0 +1,61 @@
+\documentclass[reprint, amsmath, amssymb, aps, pra, nofootinbib]{revtex4-2}
+
+% --- Основные пакеты ---
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian,english]{babel}
+
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage{bm}
+
+% hyperref в REVTeX лучше подключать с параметрами или использовать встроенный механизм
+\usepackage[unicode, colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue]{hyperref}
+
+\begin{document}
+
+\title{Название работы}
+
+\author{Ефим Сычев}
+\email{sychev.ea@phystech.edu}
+\affiliation{Московский физико-технический университет, группа Б02-506}
+
+\author{Иван Рудко}
+\email{rudko.ia@phystech.edu} 
+\affiliation{Московский физико-технический университет, группа Б02-506}
+
+\date{\today}
+
+\begin{abstract}
+Здесь пишется аннотация. Кратко: что измеряли, каким методом, что получили в итоге. Никакой воды, только суть.
+\end{abstract}
+
+\maketitle
+
+% --- Основной текст ---
+\section{Введение}
+Тут начинается твой текст. Если нужно сослаться на формулу, используй команду \ref{eq:my_formula}.
+
+\section{Физические основы явления}
+Обычные формулы в строке пишутся так: $E = mc^2$. 
+А выделенные формулы оформляются окружением \texttt{equation}:
+\begin{equation}
+    \int_{-\infty}^{+\infty} e^{-x^2} dx = \sqrt{\pi}
+    \label{eq:my_formula}
+\end{equation}
+
+\section{Экспериментальная установка}
+Здесь мы вставляем картинку.
+
+\section{Ход работы}
+
+\section{Заключение}
+Выводы по работе. 
+
+% --- Библиография ---
+\begin{thebibliography}{99}
+\bibitem{devoret1985}
+M. H. Devoret, J. M. Martinis, and J. Clarke, \textit{Phys. Rev. Lett.} \textbf{55}, 1908 (1985).
+\end{thebibliography}
+
+\end{document}
