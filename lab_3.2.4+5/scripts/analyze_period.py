@@ -14,6 +14,7 @@
 Запуск:  python analyze_period.py [--xlsx 325.xlsx] [--sigT 1.0] [--Crel 0.01] [--no-show]
 """
 import argparse
+import os
 import sys
 
 import numpy as np
@@ -24,6 +25,9 @@ plt.rcParams.update({"font.size": 12, "axes.titlesize": 14, "axes.labelsize": 13
 
 L_LCR, L_LCR_SIG = 99.944e-3, 0.1e-3     # Гн: измерено LCR-метром GW Instek LCR-7819 (50/500/1500 Гц)
 SHEET = "1. Свободные колебания"
+
+DATA_DIR = r"C:\Utilities\Projects\MIPT_labs\lab_3.2.4+5\data"
+FIGURES_DIR = r"C:\Utilities\Projects\MIPT_labs\lab_3.2.4+5\figures"
 
 
 def read_xlsx(path):
@@ -61,10 +65,10 @@ def wls_line(x, y, sx, sy, iters=10):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--xlsx", default="325.xlsx")
+    ap.add_argument("--xlsx", default=os.path.join(DATA_DIR, "325.xlsx"))
     ap.add_argument("--sigT", type=float, default=1.0, help="погрешность отсчёта T курсорами, мкс (ОЦЕНКА)")
     ap.add_argument("--Crel", type=float, default=0.01, help="отн. погрешность ёмкости магазина (ОЦЕНКА)")
-    ap.add_argument("--out", default="period")
+    ap.add_argument("--out", default=os.path.join(FIGURES_DIR, "period"))
     ap.add_argument("--no-show", action="store_true")
     args = ap.parse_args()
     if args.no_show:
@@ -137,7 +141,7 @@ def main():
     cc = np.linspace(-C0_fit * 1.2, C.max() * 1.05, 50)
     a2.plot(cc * 1e9, (a + b * cc) * 1e12, "C3-", label=f"МНК: L = {L_fit*1e3:.1f} ± {sL_fit*1e3:.1f} мГн")
     a2.axvline(0, color="gray", lw=0.7)
-    a2.plot([-C0_fit * 1e9], [0], "rx", ms=9, mew=2, label=f"$-C_0$ = {-C0_fit*1e9:.2f} нФ")
+    a2.plot([-C0_fit * 1e9], [0], "rx", ms=9, mew=2, label=f"$-C_0$ = {-C0_fit*1e9:.2f} ± {sC0_fit*1e9:.2f} нФ")
     a2.set_xlabel("C магазина, нФ"); a2.set_ylabel("$T^2$, мкс$^2$")
     a2.set_title("Линеаризация: $T^2 = 4\\pi^2 L (C + C_0)$")
     a2.legend(loc="upper left", fontsize=10); a2.grid(True, ls="--", alpha=0.5)
@@ -150,9 +154,8 @@ def main():
     a3.set_title("Отклонение от теории (±2σ)"); a3.grid(True, ls="--", alpha=0.5)
 
     fig.tight_layout()
-    fig.savefig(args.out + ".png", dpi=150)
     fig.savefig(args.out + ".pdf")
-    print(f"\nСохранено: {args.out}.png/.pdf")
+    print(f"\nСохранено: {args.out}.pdf")
     if not args.no_show:
         plt.show()
 
