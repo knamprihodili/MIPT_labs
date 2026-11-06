@@ -61,19 +61,6 @@ public:
     }
 };
 
-class DoubleDiceComp : public Dice {
-public:
-    DoubleDiceComp(Dice &d) : pen(d), bon(d) { }
-
-    unsigned roll() override {
-        return pen.roll() + bon.roll();
-    }
-
-private:
-    PenaltyDice pen;
-    BonusDice bon;
-};
-
 double expected_value(Dice &d, unsigned number_of_rolls = 1) {
     auto accum = 0llu;
     for (unsigned cnt = 0; cnt != number_of_rolls; ++cnt)
@@ -95,17 +82,14 @@ int main() {
 
     SingleDice d100(100, 42);
     DoubleDice dd(d100);
-    DoubleDiceComp dd_comp(d100);
 
     std::cout << "DoubleDice expected value: " << expected_value(dd, rolls) << '\n';
-    std::cout << "DoubleDiceComp expected value: " << expected_value(dd_comp, rolls) << '\n';
 
     std::ofstream out("data/double_dice.csv");
-    out << "value,prob,prob_comp\n";
+    out << "value,prob\n";
     for (unsigned v = 2; v <= 200; ++v) {
         out << v << ","
-            << value_probability(v, dd, rolls) << ","
-            << value_probability(v, dd_comp, rolls) << "\n";
+            << value_probability(v, dd, rolls) << "\n";
     }
 
     return 0;
