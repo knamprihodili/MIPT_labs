@@ -17,3 +17,12 @@ __pycache__/
 
 # Исключаем мусор от Jupyter Notebook
 *.ipynb_checkpoints
+
+# Служебные отчёты проверки таблиц
+*.inspect.ndjson
+
+# Временные файлы сборки
+build/
+
+# Временные файлы Excel
+~$*.xlsx
